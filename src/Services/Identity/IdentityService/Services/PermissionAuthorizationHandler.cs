@@ -4,7 +4,7 @@ public class PermissionAuthorizationHandler : AuthorizationHandler<PermissionReq
 {
     protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, PermissionRequirement requirement)
     {
-        var permissions = context.User.FindAll("Permissions").Select(c => c.Value).ToList();
+        var permissions = context.User.FindAll("permissions").Select(c => c.Value).ToList();
 
         if (permissions.Contains(requirement.Permission))
         {

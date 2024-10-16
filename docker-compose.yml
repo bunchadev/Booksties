@@ -17,6 +17,67 @@ services:
     networks:
       custom:
 
+
+  catalogdb:
+    image: postgres:latest
+    container_name: catalogdb
+    environment:
+      - POSTGRES_USER=trung1
+      - POSTGRES_PASSWORD=trung1
+      - POSTGRES_DB=CatalogDb
+    restart: always
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_catalogdata:/var/lib/postgresql/data/
+    networks:
+      custom:
+
+
+  messagebroker:
+    image: rabbitmq:management
+    container_name: messagebroker
+    hostname: auction-mq
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      custom:
+
+
+  searchdb:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: searchdb
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false   
+      - xpack.security.enrollment.enabled=false  
+    restart: always
+    ports:
+      - "9200:9200"
+    volumes:
+      - search_data:/usr/share/elasticsearch/data
+    networks:
+      custom:
+
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.0
+    environment:
+      - ELASTICSEARCH_HOSTS=http://searchdb:9200
+    restart: always
+    ports:
+      - "5601:5601"
+    depends_on:
+      - searchdb
+    networks:
+      custom:
+
+
   identityservice:
     image: ${DOCKER_REGISTRY-}identityservice
     build:
@@ -27,6 +88,7 @@ services:
       - ASPNETCORE_HTTP_PORTS=8080
       - ASPNETCORE_HTTPS_PORTS=8081
       - ConnectionStrings__Database=Server=identitydb;Database=IdentityDb;User Id=sa;Password=Trung1232003;Encrypt=False;TrustServerCertificate=True
+    restart: always
     depends_on:
       - identitydb
     ports:
@@ -38,6 +100,30 @@ services:
     networks:
       custom:
 
+
+  catalogservice:
+    image: ${DOCKER_REGISTRY-}catalogservice
+    build:
+      context: ./src/Services/Catalog/CatalogService
+      dockerfile: Dockerfile
+    environment:
+      - PORT=8080
+      - DB_HOST=catalogdb
+      - DB_PORT=5432
+      - DB_DATABASE=CatalogDb
+      - DB_USERNAME=trung1
+      - DB_PASSWORD=trung1
+      - RABBITMQ_URL=amqp://guest:guest@auction-mq:5672
+    restart: always
+    depends_on:
+      - catalogdb
+      - messagebroker
+    ports:
+      - "6001:8080"
+    networks:
+      custom:
+
+
   yarpapigateway:
     image: ${DOCKER_REGISTRY-}yarpapigateway
     build:
@@ -47,6 +133,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8080
       - ASPNETCORE_HTTPS_PORTS=8081
+    restart: always
     depends_on:
       - identityservice
     ports:
@@ -58,8 +145,12 @@ services:
     networks:
       custom:
 
+
 volumes:
   sqlserver_identitydata:
+  postgres_catalogdata:
+  search_data:
+
 
 networks:
   custom:

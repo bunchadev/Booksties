@@ -3,7 +3,6 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Newtonsoft.Json;
 
 namespace IdentityService.Services
 {
@@ -20,7 +19,7 @@ namespace IdentityService.Services
             {
                 foreach (var permission in permissions)
                 {
-                    claims.Add(new Claim("Permissions", permission.PermissionName ?? ""));
+                    claims.Add(new Claim("permissions", permission.PermissionName ?? ""));
                 }
             }
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"] ?? ""));
